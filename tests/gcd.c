@@ -4,6 +4,7 @@
 #define GCD_X 0x4004
 #define GCD_Y 0x4008
 #define GCD_GCD 0x400C
+#define GCD_COUNT 0x4010
 
 unsigned int gcd_ref(unsigned int x, unsigned int y) {
   while (y != 0) {
@@ -31,13 +32,19 @@ int main(void)
   while ((reg_read8(GCD_STATUS) & 0x1) == 0) ;
 
   result = reg_read32(GCD_GCD);
+  count = reg_read32(GCD_COUNT);
   ref = gcd_ref(x, y);
 
   if (result != ref) {
     printf("Hardware result %d does not match reference value %d\n", result, ref);
     return 1;
   }
+  if (count != 1) {
+    printf("Hardware GCD count %d should be 1\n", count);
+    return 1;
+  }
   printf("Hardware result %d is correct for GCD\n", result);
+  printf("GCD has accepted %d task(s)\n", count);
   return 0;
 }
 // DOC include end: GCD test

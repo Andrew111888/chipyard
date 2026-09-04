@@ -138,6 +138,7 @@ class GCDTL(params: GCDParams, beatBytes: Int)(implicit p: Parameters) extends C
       val y = Wire(new DecoupledIO(UInt(params.width.W)))
       val gcd = Wire(new DecoupledIO(UInt(params.width.W)))
       val status = Wire(UInt(2.W))
+      val count = RegInit(0.U(32.W))
 
       val impl_io = if (params.useBlackBox) {
         val impl = Module(new GCDMMIOBlackBox(params.width))
@@ -155,6 +156,10 @@ class GCDTL(params: GCDParams, beatBytes: Int)(implicit p: Parameters) extends C
       impl_io.input_valid := y.valid
       y.ready := impl_io.input_ready
 
+      when (y.fire) {
+        count := count + 1.U
+      }
+
       gcd.bits := impl_io.gcd
       gcd.valid := impl_io.output_valid
       impl_io.output_ready := gcd.ready
@@ -171,7 +176,9 @@ class GCDTL(params: GCDParams, beatBytes: Int)(implicit p: Parameters) extends C
         0x08 -> Seq(
           RegField.w(params.width, y)), // write-only, y.valid is set on write
         0x0C -> Seq(
-          RegField.r(params.width, gcd))) // read-only, gcd.ready is set on read
+          RegField.r(params.width, gcd)), // read-only, gcd.ready is set on read
+        0x10 -> Seq(
+          RegField.r(32, count))) // read-only count of accepted GCD tasks
 // DOC include end: GCD instance regmap
     }
   }
