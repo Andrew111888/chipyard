@@ -147,6 +147,7 @@ class GCDTL(params: GCDParams, beatBytes: Int)(implicit p: Parameters) extends C
         val impl = Module(new GCDMMIOChiselModule(params.width))
         impl.io
       }
+      val output_valid_d = RegNext(impl_io.output_valid, false.B)
 
       impl_io.clock := clock
       impl_io.reset := reset.asBool
@@ -156,7 +157,10 @@ class GCDTL(params: GCDParams, beatBytes: Int)(implicit p: Parameters) extends C
       impl_io.input_valid := y.valid
       y.ready := impl_io.input_ready
 
-      when (y.fire) {
+      // Count a task when the GCD result first becomes valid (s_run -> s_done).
+      // The delayed copy prevents counting the same completed result every cycle
+      // while the hardware waits for software to read GCD_GCD.
+      when (impl_io.output_valid && !output_valid_d) {
         count := count + 1.U
       }
 
